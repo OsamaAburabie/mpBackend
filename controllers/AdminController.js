@@ -1,4 +1,4 @@
-const Ticket = require("../models/ticketModel");
+const Ticket = require("../models/taskModel");
 const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 

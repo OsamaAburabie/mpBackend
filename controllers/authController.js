@@ -49,7 +49,7 @@ exports.user_register = async function (req, res) {
 
     //login the user
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1hr",
+      expiresIn: "10hr",
     });
     res.json({
       token,
@@ -87,7 +87,7 @@ exports.user_login = async function (req, res) {
       return res.status(400).json({ msg: "This account has been banned" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1hr",
+      expiresIn: "10hr",
     });
     res.json({
       token,
