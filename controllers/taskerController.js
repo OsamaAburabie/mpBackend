@@ -1,6 +1,6 @@
 const Task = require("../models/taskModel");
 const User = require("../models/userModel");
-
+const Ads = require("../models/taskerAdsModel");
 exports.accept_connection = async function (req, res) {
   try {
     const { uid } = req.body;
@@ -58,6 +58,57 @@ exports.accept_connection = async function (req, res) {
     res.status(500).json({ error: err.message });
   }
 };
+exports.reject_connection = async function (req, res) {
+  try {
+    const { uid } = req.body;
+    if (!uid)
+      return res.status(400).json({ msg: "All the fields are required" });
+
+    const tasker = await User.findById(req.user);
+    if (!tasker) return res.status(400).json({ msg: "tasker not found" });
+
+    const customer = await User.findById(uid);
+    if (!customer) return res.status(400).json({ msg: "customer not found" });
+
+    //================================================================ id's
+    const taskerId = tasker._id.valueOf().toString();
+    const customerId = customer._id.valueOf().toString();
+    //================================================================
+
+    //find the tasker pending customer
+    const foundTasker = customer.pendingConnections.find(
+      (el) => el.uid === taskerId
+    );
+    if (!foundTasker) return res.status(400).json({ msg: "Tasker not found" });
+
+    //find the customer tasker
+    const foundCustomer = tasker.pendingConnections.find(
+      (el) => el.uid === customerId
+    );
+    if (!foundCustomer)
+      return res.status(400).json({ msg: "Customer not found" });
+
+    //adding connection
+    await tasker.updateOne({
+      $pull: {
+        pendingConnections: foundCustomer,
+      },
+    });
+
+    await customer.updateOne({
+      $pull: {
+        pendingConnections: foundTasker,
+      },
+    });
+
+    const updated = await User.findOne({
+      _id: req.user,
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.delete_specific_task = async function (req, res) {
   try {
@@ -104,5 +155,33 @@ exports.get_all_tasks_for_tasker = async function (req, res) {
     res.json(tasks);
   } catch (err) {
     res.status(404).json({ msg: "Not found 404" });
+  }
+};
+
+exports.makeAd = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+    //checking if this user is an admin
+    if (user.role != "tasker")
+      return res.status(400).json({ msg: "you're not a tasker" });
+    //================================
+    const { title, desc, price, location } = req.body;
+    //================================
+
+    const newAd = await Ads({
+      title,
+      desc,
+      price,
+      location,
+      taskerInfo: {
+        name: user.displayName,
+        uid: user._id,
+      },
+      catId: req.params.catId,
+    });
+    const ad = await newAd.save();
+    res.json(ad);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
   }
 };

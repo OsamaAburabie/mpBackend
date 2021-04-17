@@ -30,5 +30,5 @@ mongoose.connect(
 
 //setup routes
 app.use("/users", require("./routes/userRouter"));
-// app.use("/admins", require("./routes/adminRouter"));
+app.use("/admins", require("./routes/adminRouter"));
 app.use("/check", require("./routes/tokenChecking"));

@@ -1,17 +1,8 @@
-// const router = require("express").Router();
-// const auth = require("../middleware/auth");
-// const { admin_register } = require("../controllers/authController");
-// const {
-//   get_all_tickets_by_admin,
-//   change_ticket_status_by_admin,
-//   bun_customers_by_admin,
-// } = require("../controllers/AdminController");
-// const {
-//   get_all_admins_by_super_admim,
-//   change_role_by_super_admin,
-// } = require("../controllers/SuperAdminsControllers");
+const router = require("express").Router();
+const auth = require("../middleware/auth");
+const { add__category } = require("../controllers/adminController");
 
-// router.post("/register", auth, admin_register);
+router.post("/addCategory", auth, add__category);
 
 // router.get("/allTickets", auth, get_all_tickets_by_admin);
 
@@ -24,4 +15,4 @@
 
 // router.put("/allAdmins/:id", auth, change_role_by_super_admin);
 
-// module.exports = router;
+module.exports = router;

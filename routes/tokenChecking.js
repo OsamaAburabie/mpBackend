@@ -25,6 +25,8 @@ router.post("/isLoggedIn", async (req, res) => {
       displayName: user.displayName,
       email: user.email,
       role: user.role,
+      pendingConnections: user.pendingConnections,
+      connections: user.connections,
       id: user._id,
     });
   } catch (err) {

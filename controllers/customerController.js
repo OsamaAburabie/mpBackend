@@ -1,5 +1,7 @@
 const Task = require("../models/taskModel");
 const User = require("../models/userModel");
+const Category = require("../models/categoryModel");
+const Ads = require("../models/taskerAdsModel");
 
 exports.add_connection = async function (req, res) {
   try {
@@ -81,5 +83,87 @@ exports.add_task = async function (req, res) {
     res.json(savedTask);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.get_all_categories = async function (req, res) {
+  try {
+    const category = await Category.find();
+    res.json(category);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+exports.get_all_from_category = async function (req, res) {
+  try {
+    const ads = await Ads.find({ catId: req.params.catId });
+    res.json(ads);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+exports.add_commnet = async function (req, res) {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ msg: "All fields are required" });
+    //================================================================
+    const ad = await Ads.findOne({
+      _id: req.params.adsId,
+    });
+    if (!ad) return res.status(400).json({ msg: "No ad found" });
+
+    //get username
+    const user = await User.findById(req.user);
+    //================================================================
+    const comment = { username: user.displayName, text };
+    ad.comments.push(comment);
+    ad.save();
+    //================================================================
+    res.json(ad);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+exports.get_single_ad = async function (req, res) {
+  try {
+    const ad = await Ads.findOne({
+      _id: req.params.adsId,
+    });
+    if (!ad) return res.status(400).json({ msg: "No ad found" });
+    res.json(ad);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+
+exports.rate = async function (req, res) {
+  try {
+    const { rate } = req.body;
+    if (!rate) return res.status(400).json({ msg: "enter a rate" });
+    //================================================================
+    //get users
+    const tasker = await User.findById(req.params.taskerId);
+    //================================================================
+    const customeRating = { rate };
+    tasker.rating.push(customeRating);
+    tasker.save();
+    //================================================================
+    res.json(tasker.rating);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+exports.get_tasker_info = async function (req, res) {
+  try {
+    const tasker = await User.findById(req.params.taskerId);
+    res.json({
+      tasker: {
+        name: tasker.displayName,
+        finishedTasks: tasker.connections,
+        rating: tasker.rating,
+      },
+    });
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
   }
 };
