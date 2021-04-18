@@ -20,13 +20,15 @@ exports.add_connection = async function (req, res) {
       (el) => el.uid === req.user
     );
     if (foundPending)
-      return res.status(400).json({ msg: "your requser is already pending" });
+      return res
+        .status(400)
+        .json({ msg: "تم ارسال طلبك مسبقا .. الرجاء انتظار موافقه العامل" });
 
     const foundConnection = tasker.connections.some(
       (el) => el.uid === req.user
     );
     if (foundConnection)
-      return res.status(400).json({ msg: "you already have connection" });
+      return res.status(400).json({ msg: "هذا العامل ضمن شبكتك بالفعل." });
 
     //adding connection
     await tasker.updateOne({
@@ -40,10 +42,7 @@ exports.add_connection = async function (req, res) {
       },
     });
 
-    const updated = await User.findOne({
-      _id: req.params.taskerId,
-    });
-    res.json(updated);
+    res.json({ msg: "تم ارسال طلبك .. انتظر موافقه العامل في اقرب وقت" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -153,17 +152,68 @@ exports.rate = async function (req, res) {
     res.status(404).json({ msg: err.message });
   }
 };
+
 exports.get_tasker_info = async function (req, res) {
   try {
     const tasker = await User.findById(req.params.taskerId);
     res.json({
       tasker: {
         name: tasker.displayName,
-        finishedTasks: tasker.connections,
+        finishedTasks: tasker.doneTasks.length,
         rating: tasker.rating,
+        lastLogin: tasker.lastLogin,
+        createdAt: tasker.createdAt,
+
+        //TODO get the created date
       },
     });
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }
 };
+
+exports.delete_notification = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+
+    // const pushNotification = { text, type: "rate", taskerId };
+    user.notification.pull({ _id: req.params.notificationId });
+    user.save();
+    res.json(user.notification);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+
+exports.lastLogin = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+    if (!user) return res.status(400).json({ msg: " username not found" });
+    //updating the ticket status
+    await user.updateOne({ lastLogin: Date.now() });
+
+    res.json({ msg: "updated succesfully" });
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+// exports.noti = async function (req, res) {
+//   try {
+//     const tasker = await User.findById(req.params.taskerId);
+//     const customer = await User.findById(req.user);
+
+//     const taskerName = tasker.displayName;
+//     //================================================================
+//     const text = `please rate ${taskerName}`;
+//     //================================================================
+//     const taskerId = tasker._id.valueOf().toString();
+//     //================================================================
+//     const pushNotification = { text, type: "rate", taskerId };
+//     customer.notification.push(pushNotification);
+//     customer.save();
+//     //================================================================
+//     res.json(customer);
+//   } catch (err) {
+//     res.status(404).json({ msg: err.message });
+//   }
+// };

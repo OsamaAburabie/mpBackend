@@ -1,5 +1,21 @@
 const mongoose = require("mongoose");
 
+const notificationSchema = new mongoose.Schema(
+  {
+    type: { type: String },
+    taskerId: { type: String },
+    seen: { type: Boolean, default: false },
+    text: { type: String },
+  },
+  { timestamps: true }
+);
+const dontTasksSchema = new mongoose.Schema(
+  {
+    taskId: { type: String, required: true },
+  },
+  { timestamps: true }
+);
+
 const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true },
@@ -10,6 +26,12 @@ const userSchema = new mongoose.Schema(
     connections: [Object],
     pendingConnections: [Object],
     rating: [Object],
+    doneTasks: [dontTasksSchema],
+    notification: [notificationSchema],
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

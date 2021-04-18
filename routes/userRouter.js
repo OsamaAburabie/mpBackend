@@ -19,6 +19,8 @@ const {
   get_single_ad,
   rate,
   get_tasker_info,
+  delete_notification,
+  lastLogin,
 } = require("../controllers/customerController");
 //================================================================
 const {
@@ -28,6 +30,7 @@ const {
   reject_connection,
   send_message,
   makeAd,
+  mark_as_done,
 } = require("../controllers/taskerController");
 //================================================================
 
@@ -50,13 +53,17 @@ router.get("/getSingleAd/:adsId", get_single_ad);
 router.post("/addComment/:adsId", auth, add_commnet);
 router.post("/rate/:taskerId", auth, connection, rate);
 router.get("/taskerInfo/:taskerId", get_tasker_info);
+router.post("/deleteNotifcation/:notificationId", auth, delete_notification);
 //================================================================================= tasker handlers
 router.post("/acceptConnection", auth, accept_connection);
 router.post("/rejectConnection", auth, reject_connection);
 router.get("/myTasks", auth, get_all_tasks_for_tasker);
 router.delete("/myTasks/:id", auth, delete_specific_task);
+router.put("/doneTask/:id", auth, mark_as_done);
 router.post("/newAd/:catId", auth, makeAd);
+
 //================================================================================= global handlers
 router.post("/sendMessage/:id", auth, connection, send_message);
+router.put("/lastLogin", auth, lastLogin);
 
 module.exports = router;

@@ -185,3 +185,59 @@ exports.makeAd = async function (req, res) {
     res.status(404).json({ msg: err.message });
   }
 };
+
+exports.delete_specific_task = async function (req, res) {
+  try {
+    const task = await Task.findOne({
+      userId: req.user,
+      _id: req.params.id,
+    });
+    if (!task) return res.status(400).json({ msg: "No task found" });
+    const deleteTask = await Task.findByIdAndDelete(req.params.id);
+    res.json(deleteTask);
+  } catch (err) {
+    res.status(404).json({ msg: "Not found 404" });
+  }
+};
+exports.mark_as_done = async function (req, res) {
+  try {
+    const tasker = await User.findById(req.user);
+    //checking if this user is an admin
+    if (tasker.role != "tasker")
+      return res.status(400).json({ msg: "Unauthorized" });
+    //if the user is an admin they can edit ticket status
+    const task = await Task.findOne({
+      _id: req.params.id,
+    });
+    //check if the task exists
+    if (!task) return res.status(400).json({ msg: "No task found" });
+
+    //get customer id
+    const customerId = task.CustomerId;
+    const taskId = task._id;
+    //find the customer
+    const customer = await User.findById(customerId);
+    //===============================
+
+    const taskerName = tasker.displayName;
+
+    const text = `من فضلك قم بتقييم العامل ${taskerName}`;
+
+    const taskerId = tasker._id.valueOf().toString();
+
+    const pushNotification = { text, type: "rate", taskerId };
+    customer.notification.push(pushNotification);
+    customer.save();
+
+    tasker.doneTasks.push({ taskId });
+    tasker.save();
+    //updating the ticket status
+    await task.updateOne({ status: "done" });
+    const updated = await Task.findOne({
+      _id: req.params.id,
+    });
+    res.json(updated.status);
+  } catch (err) {
+    res.status(404).json({ msg: "Not found 404" });
+  }
+};
