@@ -66,9 +66,6 @@ exports.accept_connection = async function (req, res) {
     customer.notification.push(pushNotification);
     customer.save();
 
-    tasker.doneTasks.push({ taskId });
-    tasker.save();
-
     const updated = await User.findOne({
       _id: req.user,
     });
