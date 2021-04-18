@@ -140,14 +140,20 @@ exports.rate = async function (req, res) {
     const { rate } = req.body;
     if (!rate) return res.status(400).json({ msg: "enter a rate" });
     //================================================================
-    //get users
     const tasker = await User.findById(req.params.taskerId);
+    const user = await User.findById(req.user);
     //================================================================
+    const taskerId = tasker._id.valueOf().toString();
+    //================================================================
+
     const customeRating = { rate };
     tasker.rating.push(customeRating);
     tasker.save();
     //================================================================
-    res.json(tasker.rating);
+    user.notification.pull({ _id: req.params.notifId });
+    user.save();
+    // res.json("done");
+    res.json(user);
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }
@@ -156,6 +162,8 @@ exports.rate = async function (req, res) {
 exports.get_tasker_info = async function (req, res) {
   try {
     const tasker = await User.findById(req.params.taskerId);
+    if (!tasker) return res.status(400).json({ msg: "No tasker found" });
+
     res.json({
       tasker: {
         name: tasker.displayName,
@@ -172,14 +180,22 @@ exports.get_tasker_info = async function (req, res) {
   }
 };
 
-exports.delete_notification = async function (req, res) {
+exports.update_notification = async function (req, res) {
   try {
     const user = await User.findById(req.user);
 
-    // const pushNotification = { text, type: "rate", taskerId };
-    user.notification.pull({ _id: req.params.notificationId });
+    // console.log(user.notification);
+
+    const filterd = user.notification.filter(
+      (el) => el.notifId === req.params.notificationId
+    );
+
+    filterd[0].seen = 1;
     user.save();
-    res.json(user.notification);
+
+    // user.notification.pull({ _id: req.params.notificationId });
+    // res.json("done");
+    res.json(user);
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }

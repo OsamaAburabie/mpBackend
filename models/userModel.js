@@ -4,8 +4,9 @@ const notificationSchema = new mongoose.Schema(
   {
     type: { type: String },
     taskerId: { type: String },
-    seen: { type: Boolean, default: false },
+    seen: { type: Number, default: 0 },
     text: { type: String },
+    notifId: { type: String },
   },
   { timestamps: true }
 );

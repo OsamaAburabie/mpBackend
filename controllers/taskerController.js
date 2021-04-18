@@ -1,6 +1,8 @@
 const Task = require("../models/taskModel");
 const User = require("../models/userModel");
 const Ads = require("../models/taskerAdsModel");
+const { v4: uuidv4 } = require("uuid");
+
 exports.accept_connection = async function (req, res) {
   try {
     const { uid } = req.body;
@@ -49,6 +51,23 @@ exports.accept_connection = async function (req, res) {
         connections: foundTasker,
       },
     });
+
+    const taskerName = tasker.displayName;
+
+    const text = `لقد اضافك ${taskerName} الى شبكته .. تواصل معه الاَن`;
+
+    const pushNotification = {
+      text,
+      type: "connection",
+      taskerId,
+      notifId: uuidv4(),
+    };
+
+    customer.notification.push(pushNotification);
+    customer.save();
+
+    tasker.doneTasks.push({ taskId });
+    tasker.save();
 
     const updated = await User.findOne({
       _id: req.user,
@@ -225,7 +244,12 @@ exports.mark_as_done = async function (req, res) {
 
     const taskerId = tasker._id.valueOf().toString();
 
-    const pushNotification = { text, type: "rate", taskerId };
+    const pushNotification = {
+      text,
+      type: "rate",
+      taskerId,
+      notifId: uuidv4(),
+    };
     customer.notification.push(pushNotification);
     customer.save();
 
@@ -238,6 +262,6 @@ exports.mark_as_done = async function (req, res) {
     });
     res.json(updated.status);
   } catch (err) {
-    res.status(404).json({ msg: "Not found 404" });
+    res.status(404).json({ msg: err.message });
   }
 };

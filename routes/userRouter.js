@@ -19,7 +19,7 @@ const {
   get_single_ad,
   rate,
   get_tasker_info,
-  delete_notification,
+  update_notification,
   lastLogin,
 } = require("../controllers/customerController");
 //================================================================
@@ -51,9 +51,9 @@ router.get("/getallfromCategory/:catId", get_all_from_category);
 router.get("/getallCategories", get_all_categories);
 router.get("/getSingleAd/:adsId", get_single_ad);
 router.post("/addComment/:adsId", auth, add_commnet);
-router.post("/rate/:taskerId", auth, connection, rate);
+router.post("/rate/:taskerId/:notifId", auth, connection, rate);
 router.get("/taskerInfo/:taskerId", get_tasker_info);
-router.post("/deleteNotifcation/:notificationId", auth, delete_notification);
+router.put("/updateNotification/:notificationId", auth, update_notification);
 //================================================================================= tasker handlers
 router.post("/acceptConnection", auth, accept_connection);
 router.post("/rejectConnection", auth, reject_connection);
