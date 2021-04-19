@@ -177,16 +177,27 @@ exports.get_tasker_info = async function (req, res) {
   try {
     const tasker = await User.findById(req.params.taskerId);
     if (!tasker) return res.status(400).json({ msg: "No tasker found" });
+    //==========================================================
+    const resutl = tasker.rating.map((el) => el).length;
+    let sum = 0;
+    tasker.rating.map(myFunction);
+
+    function myFunction(obj) {
+      sum += obj["rate"] / resutl;
+    }
+    //==========================================================
 
     res.json({
       tasker: {
         name: tasker.displayName,
+        img: tasker.img,
         finishedTasks: tasker.doneTasks.length,
-        rating: tasker.rating,
+        rating: {
+          sum,
+          numOfVotes: resutl,
+        },
         lastLogin: tasker.lastLogin,
         createdAt: tasker.createdAt,
-
-        //TODO get the created date
       },
     });
   } catch (err) {
@@ -198,14 +209,15 @@ exports.get_tasker_rating = async function (req, res) {
     const tasker = await User.findById(req.params.taskerId);
     if (!tasker) return res.status(400).json({ msg: "No tasker found" });
 
+    //==========================================================
     const resutl = tasker.rating.map((el) => el).length;
-
     let sum = 0;
     tasker.rating.map(myFunction);
 
     function myFunction(obj) {
       sum += obj["rate"] / resutl;
     }
+    //==========================================================
 
     res.json(sum);
   } catch (err) {
