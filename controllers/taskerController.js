@@ -34,23 +34,31 @@ exports.accept_connection = async function (req, res) {
       return res.status(400).json({ msg: "Customer not found" });
 
     //adding connection
-    await tasker.updateOne({
-      $pull: {
-        pendingConnections: foundCustomer,
-      },
-      $push: {
-        connections: foundCustomer,
-      },
-    });
+    // await tasker.updateOne({
+    //   $pull: {
+    //     pendingConnections: foundCustomer,
+    //   },
+    //   $push: {
+    //     connections: foundCustomer,
+    //   },
+    // });
 
-    await customer.updateOne({
-      $pull: {
-        pendingConnections: foundTasker,
-      },
-      $push: {
-        connections: foundTasker,
-      },
-    });
+    await tasker.pendingConnections.pull(foundCustomer);
+    await tasker.connections.push(foundCustomer);
+    await tasker.save();
+
+    // await customer.updateOne({
+    //   $pull: {
+    //     pendingConnections: foundTasker,
+    //   },
+    //   $push: {
+    //     connections: foundTasker,
+    //   },
+    // });
+
+    await customer.pendingConnections.pull(foundTasker);
+    await customer.connections.push(foundTasker);
+    await customer.save();
 
     const taskerName = tasker.displayName;
 

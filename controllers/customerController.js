@@ -31,22 +31,36 @@ exports.add_connection = async function (req, res) {
       return res.status(400).json({ msg: "هذا العامل ضمن شبكتك بالفعل." });
 
     //adding connection
-    await tasker.updateOne({
-      $push: {
-        pendingConnections: { name: customer.displayName, uid: customerId },
-      },
+    // await tasker.updateOne({
+    //   $push: {
+    //     pendingConnections: { name: customer.displayName, uid: customerId },
+    //   },
+    // });
+
+    tasker.pendingConnections.push({
+      name: customer.displayName,
+      uid: customerId,
     });
-    await customer.updateOne({
-      $push: {
-        pendingConnections: { name: tasker.displayName, uid: taskerId },
-      },
+    tasker.save();
+
+    customer.pendingConnections.push({
+      name: tasker.displayName,
+      uid: taskerId,
     });
+    customer.save();
+
+    // await customer.updateOne({
+    //   $push: {
+    //     pendingConnections: { name: tasker.displayName, uid: taskerId },
+    //   },
+    // });
 
     res.json({ msg: "تم ارسال طلبك .. انتظر موافقه العامل في اقرب وقت" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 exports.get_tasker_tasks_by_customer = async function (req, res) {
   try {
     //find tasker
@@ -179,13 +193,30 @@ exports.get_tasker_info = async function (req, res) {
     res.status(404).json({ msg: err.message });
   }
 };
+exports.get_tasker_rating = async function (req, res) {
+  try {
+    const tasker = await User.findById(req.params.taskerId);
+    if (!tasker) return res.status(400).json({ msg: "No tasker found" });
+
+    const resutl = tasker.rating.map((el) => el).length;
+
+    let sum = 0;
+    tasker.rating.map(myFunction);
+
+    function myFunction(obj) {
+      sum += obj["rate"] / resutl;
+    }
+
+    res.json(sum);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
 
 exports.update_notification = async function (req, res) {
   try {
     const user = await User.findById(req.user);
-
     // console.log(user.notification);
-
     const filterd = user.notification.filter(
       (el) => el.notifId === req.params.notificationId
     );
@@ -195,7 +226,17 @@ exports.update_notification = async function (req, res) {
 
     // user.notification.pull({ _id: req.params.notificationId });
     // res.json("done");
-    res.json(user);
+    res.json("done");
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+exports.delete_notification = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+    user.notification.pull({ _id: req.params.notificationId });
+    await user.save();
+    res.json("done");
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }

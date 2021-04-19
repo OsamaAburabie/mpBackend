@@ -16,6 +16,10 @@ const dontTasksSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+const connectionSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  uid: { type: String, required: true },
+});
 
 const userSchema = new mongoose.Schema(
   {
@@ -24,8 +28,8 @@ const userSchema = new mongoose.Schema(
     displayName: { type: String, required: true },
     role: { type: String, required: true, default: "customer" },
     active: { type: Boolean, required: true, default: true },
-    connections: [Object],
-    pendingConnections: [Object],
+    connections: [connectionSchema],
+    pendingConnections: [connectionSchema],
     rating: [Object],
     doneTasks: [dontTasksSchema],
     notification: [notificationSchema],
