@@ -3,8 +3,70 @@ const User = require("../models/userModel");
 const Category = require("../models/categoryModel");
 const Ads = require("../models/taskerAdsModel");
 
+// exports.add_connection_old = async function (req, res) {
+//   try {
+//     const tasker = await User.findById(req.params.taskerId);
+//     if (!tasker) return res.status(400).json({ msg: "tasker not found" });
+//     const customer = await User.findById(req.user);
+//     if (!customer) return res.status(400).json({ msg: "customer not found" });
+
+//     //================================================================
+//     const taskerId = tasker._id.valueOf().toString();
+//     const customerId = customer._id.valueOf().toString();
+//     //================================================================
+
+//     //check if connection is pending
+//     const foundPending = tasker.pendingConnections.some(
+//       (el) => el.uid === req.user
+//     );
+//     if (foundPending)
+//       return res
+//         .status(400)
+//         .json({ msg: "تم ارسال طلبك مسبقا .. الرجاء انتظار موافقه العامل" });
+
+//     const foundConnection = tasker.connections.some(
+//       (el) => el.uid === req.user
+//     );
+//     if (foundConnection)
+//       return res.status(400).json({ msg: "هذا العامل ضمن شبكتك بالفعل." });
+
+//     //adding connection
+//     // await tasker.updateOne({
+//     //   $push: {
+//     //     pendingConnections: { name: customer.displayName, uid: customerId },
+//     //   },
+//     // });
+
+//     tasker.pendingConnections.push({
+//       name: customer.displayName,
+//       uid: customerId,
+//     });
+//     tasker.save();
+
+//     customer.pendingConnections.push({
+//       name: tasker.displayName,
+//       uid: taskerId,
+//     });
+//     customer.save();
+
+//     // await customer.updateOne({
+//     //   $push: {
+//     //     pendingConnections: { name: tasker.displayName, uid: taskerId },
+//     //   },
+//     // });
+
+//     res.json({ msg: "تم ارسال طلبك .. انتظر موافقه العامل في اقرب وقت" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
 exports.add_connection = async function (req, res) {
   try {
+    const { title, location, desc } = req.body;
+    //validation
+    if (!title || !location)
+      return res.status(400).json({ msg: "الرجاء ادخال الحقول المطلوبه" });
+
     const tasker = await User.findById(req.params.taskerId);
     if (!tasker) return res.status(400).json({ msg: "tasker not found" });
     const customer = await User.findById(req.user);
@@ -29,33 +91,41 @@ exports.add_connection = async function (req, res) {
     );
     if (foundConnection)
       return res.status(400).json({ msg: "هذا العامل ضمن شبكتك بالفعل." });
+    //=================================================================
+    const newTask = new Task({
+      title,
+      location,
+      desc,
+      taskerId: req.params.taskerId,
+      CustomerName: customer.displayName,
+      CustomerId: req.user,
+    });
+    const savedTask = await newTask.save();
+    //=================================================================
+    const taskId = savedTask._id.valueOf().toString();
+    //=================================================================
 
-    //adding connection
-    // await tasker.updateOne({
-    //   $push: {
-    //     pendingConnections: { name: customer.displayName, uid: customerId },
-    //   },
-    // });
-
-    tasker.pendingConnections.push({
+    await tasker.pendingConnections.push({
       name: customer.displayName,
       uid: customerId,
+      taskTitle: savedTask.title,
+      taskDesc: savedTask.desc,
+      taskId,
     });
-    tasker.save();
+    await tasker.save();
 
-    customer.pendingConnections.push({
+    await customer.pendingConnections.push({
       name: tasker.displayName,
       uid: taskerId,
+      taskId,
     });
-    customer.save();
+    await customer.save();
 
-    // await customer.updateOne({
-    //   $push: {
-    //     pendingConnections: { name: tasker.displayName, uid: taskerId },
-    //   },
-    // });
-
-    res.json({ msg: "تم ارسال طلبك .. انتظر موافقه العامل في اقرب وقت" });
+    res.json({
+      savedTask,
+      taskerPen: tasker.pendingConnections,
+      customerPen: customer.pendingConnections,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -149,7 +219,7 @@ exports.get_single_ad = async function (req, res) {
   }
 };
 
-exports.rate = async function (req, res) {
+exports.rate_old = async function (req, res) {
   try {
     const { rate } = req.body;
     if (!rate) return res.status(400).json({ msg: "enter a rate" });
@@ -168,6 +238,46 @@ exports.rate = async function (req, res) {
     user.save();
     // res.json("done");
     res.json(user);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+
+exports.rate = async function (req, res) {
+  try {
+    const { rate } = req.body;
+    if (!rate) return res.status(400).json({ msg: "enter a rate" });
+    //================================================================
+    const task = await Task.findOne({
+      CustomerId: req.user,
+      _id: req.params.taskId,
+    });
+
+    if (!task)
+      return res
+        .status(400)
+        .json({ msg: "This task is deleted or dosent belong to you" });
+
+    if (task.rated === true)
+      return res.status(400).json({ msg: "This task is already rated" });
+
+    //TODO check for status
+
+    const tasker = await User.findById(task.taskerId);
+    const customer = await User.findById(task.CustomerId);
+    //================================================================
+    const taskerId = tasker._id.valueOf().toString();
+    //================================================================
+    const customeRating = { rate };
+    await tasker.rating.push(customeRating);
+    await tasker.save();
+    //================================================================
+    await customer.notification.pull({ _id: req.params.notifId });
+    await customer.save();
+
+    await task.updateOne({ rated: true });
+
+    res.json("done");
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }
@@ -266,23 +376,51 @@ exports.lastLogin = async function (req, res) {
     res.status(404).json({ msg: err.message });
   }
 };
-// exports.noti = async function (req, res) {
-//   try {
-//     const tasker = await User.findById(req.params.taskerId);
-//     const customer = await User.findById(req.user);
 
-//     const taskerName = tasker.displayName;
-//     //================================================================
-//     const text = `please rate ${taskerName}`;
-//     //================================================================
-//     const taskerId = tasker._id.valueOf().toString();
-//     //================================================================
-//     const pushNotification = { text, type: "rate", taskerId };
-//     customer.notification.push(pushNotification);
-//     customer.save();
-//     //================================================================
-//     res.json(customer);
-//   } catch (err) {
-//     res.status(404).json({ msg: err.message });
-//   }
-// };
+exports.delete_specific_task_by_customer = async function (req, res) {
+  try {
+    const task = await Task.findOne({
+      CustomerId: req.user,
+      _id: req.params.id,
+    });
+    if (!task)
+      return res
+        .status(400)
+        .json({ msg: "This task is deleted or dosent belong to you" });
+    //================================================================ id's
+    const taskerId = task.taskerId;
+    const customerId = task.CustomerId;
+    //================================================================
+    const tasker = await User.findById(taskerId);
+    if (!tasker) return res.status(400).json({ msg: "tasker not found" });
+
+    const customer = await User.findById(customerId);
+    if (!customer) return res.status(400).json({ msg: "customer not found" });
+    //================================================================
+    //find the tasker pending customer
+    const foundTasker = customer.connections.find((el) => el.uid === taskerId);
+    if (!foundTasker)
+      return res.status(400).json({ msg: "Tasker can not be found" });
+
+    //find the customer tasker
+    const foundCustomer = tasker.connections.find(
+      (el) => el.uid === customerId
+    );
+
+    if (!foundCustomer)
+      return res.status(400).json({ msg: "Customer not found" });
+    //=======================================================================
+    await tasker.connections.pull(foundCustomer);
+    await tasker.save();
+
+    await customer.connections.pull(foundTasker);
+    await customer.save();
+    //=======================================================================
+
+    //deleted the task
+    await Task.findByIdAndDelete(req.params.id);
+    res.json("done");
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};

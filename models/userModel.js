@@ -4,6 +4,7 @@ const notificationSchema = new mongoose.Schema(
   {
     type: { type: String },
     taskerId: { type: String },
+    taskId: { type: String },
     seen: { type: Number, default: 0 },
     text: { type: String },
     notifId: { type: String },
@@ -19,6 +20,9 @@ const dontTasksSchema = new mongoose.Schema(
 const connectionSchema = new mongoose.Schema({
   name: { type: String, required: true },
   uid: { type: String, required: true },
+  taskTitle: { type: String },
+  taskDesc: { type: String },
+  taskId: { type: String },
 });
 
 const userSchema = new mongoose.Schema(

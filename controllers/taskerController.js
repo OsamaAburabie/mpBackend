@@ -5,9 +5,16 @@ const { v4: uuidv4 } = require("uuid");
 
 exports.accept_connection = async function (req, res) {
   try {
-    const { uid } = req.body;
+    const { uid, taskId } = req.body;
     if (!uid)
       return res.status(400).json({ msg: "All the fields are required" });
+    if (!taskId)
+      return res.status(400).json({ msg: "All the fields are required" });
+
+    const task = await Task.findOne({
+      _id: taskId,
+    });
+    if (!task) return res.status(400).json({ msg: "task not found" });
 
     const tasker = await User.findById(req.user);
     if (!tasker) return res.status(400).json({ msg: "tasker not found" });
@@ -33,28 +40,11 @@ exports.accept_connection = async function (req, res) {
     if (!foundCustomer)
       return res.status(400).json({ msg: "Customer not found" });
 
-    //adding connection
-    // await tasker.updateOne({
-    //   $pull: {
-    //     pendingConnections: foundCustomer,
-    //   },
-    //   $push: {
-    //     connections: foundCustomer,
-    //   },
-    // });
+    await task.updateOne({ status: "pending" });
 
     await tasker.pendingConnections.pull(foundCustomer);
     await tasker.connections.push(foundCustomer);
     await tasker.save();
-
-    // await customer.updateOne({
-    //   $pull: {
-    //     pendingConnections: foundTasker,
-    //   },
-    //   $push: {
-    //     connections: foundTasker,
-    //   },
-    // });
 
     await customer.pendingConnections.pull(foundTasker);
     await customer.connections.push(foundTasker);
@@ -84,8 +74,11 @@ exports.accept_connection = async function (req, res) {
 };
 exports.reject_connection = async function (req, res) {
   try {
-    const { uid } = req.body;
+    const { uid, taskId } = req.body;
+
     if (!uid)
+      return res.status(400).json({ msg: "All the fields are required" });
+    if (!taskId)
       return res.status(400).json({ msg: "All the fields are required" });
 
     const tasker = await User.findById(req.user);
@@ -112,7 +105,9 @@ exports.reject_connection = async function (req, res) {
     if (!foundCustomer)
       return res.status(400).json({ msg: "Customer not found" });
 
-    //adding connection
+    await Task.findByIdAndDelete(taskId);
+
+    //remove connection from both sides
     await tasker.updateOne({
       $pull: {
         pendingConnections: foundCustomer,
@@ -134,19 +129,19 @@ exports.reject_connection = async function (req, res) {
   }
 };
 
-exports.delete_specific_task = async function (req, res) {
-  try {
-    const task = await Task.findOne({
-      userId: req.user,
-      _id: req.params.id,
-    });
-    if (!task) return res.status(400).json({ msg: "No task found" });
-    const deleteTask = await Task.findByIdAndDelete(req.params.id);
-    res.json(deleteTask);
-  } catch (err) {
-    res.status(404).json({ msg: "Not found 404" });
-  }
-};
+// exports.delete_specific_task = async function (req, res) {
+//   try {
+//     const task = await Task.findOne({
+//       userId: req.user,
+//       _id: req.params.id,
+//     });
+//     if (!task) return res.status(400).json({ msg: "No task found" });
+//     const deleteTask = await Task.findByIdAndDelete(req.params.id);
+//     res.json(deleteTask);
+//   } catch (err) {
+//     res.status(404).json({ msg: "Not found 404" });
+//   }
+// };
 exports.send_message = async function (req, res) {
   try {
     const { text } = req.body;
@@ -213,59 +208,115 @@ exports.makeAd = async function (req, res) {
 exports.delete_specific_task = async function (req, res) {
   try {
     const task = await Task.findOne({
-      userId: req.user,
+      CustomerId: req.user,
       _id: req.params.id,
     });
-    if (!task) return res.status(400).json({ msg: "No task found" });
-    const deleteTask = await Task.findByIdAndDelete(req.params.id);
-    res.json(deleteTask);
+    if (!task)
+      return res
+        .status(400)
+        .json({ msg: "This task is deleted or dosent belong to you" });
+
+    //================================================================ id's
+    const taskerId = task.taskerId;
+    const customerId = task.CustomerId;
+    //================================================================
+    const tasker = await User.findById(taskerId);
+    if (!tasker) return res.status(400).json({ msg: "tasker not found" });
+
+    const customer = await User.findById(customerId);
+    if (!customer) return res.status(400).json({ msg: "customer not found" });
+    //================================================================
+    //find the tasker pending customer
+    const foundTasker = customer.connections.find((el) => el.uid === taskerId);
+    if (!foundTasker)
+      return res.status(400).json({ msg: "Tasker can not be found" });
+
+    //find the customer tasker
+    const foundCustomer = tasker.connections.find(
+      (el) => el.uid === customerId
+    );
+
+    if (!foundCustomer)
+      return res.status(400).json({ msg: "Customer not found" });
+    //=======================================================================
+    await tasker.connections.pull(foundCustomer);
+    await tasker.save();
+
+    await customer.connections.pull(foundTasker);
+    await customer.save();
+    //=======================================================================
+
+    //deleted the task
+    await Task.findByIdAndDelete(req.params.id);
+    res.json("done");
   } catch (err) {
-    res.status(404).json({ msg: "Not found 404" });
+    res.status(404).json({ msg: err.message });
   }
 };
+
 exports.mark_as_done = async function (req, res) {
   try {
-    const tasker = await User.findById(req.user);
-    //checking if this user is an admin
-    if (tasker.role != "tasker")
-      return res.status(400).json({ msg: "Unauthorized" });
     //if the user is an admin they can edit ticket status
     const task = await Task.findOne({
       _id: req.params.id,
     });
     //check if the task exists
     if (!task) return res.status(400).json({ msg: "No task found" });
-
-    //get customer id
+    //================================================================ id's
     const customerId = task.CustomerId;
-    const taskId = task._id;
-    //find the customer
-    const customer = await User.findById(customerId);
-    //===============================
+    //================================================================
+    const tasker = await User.findById(req.user);
+    if (!tasker) return res.status(400).json({ msg: "tasker not found" });
 
-    const taskerName = tasker.displayName;
-
-    const text = `من فضلك قم بتقييم العامل ${taskerName}`;
-
+    //================================================================
     const taskerId = tasker._id.valueOf().toString();
+    //================================================================
 
+    const customer = await User.findById(customerId);
+    if (!customer) return res.status(400).json({ msg: "customer not found" });
+
+    //find the tasker pending customer
+    const foundTasker = customer.connections.find((el) => el.uid === taskerId);
+    if (!foundTasker)
+      return res.status(400).json({ msg: "Tasker can not be found" });
+
+    //find the customer tasker
+    const foundCustomer = tasker.connections.find(
+      (el) => el.uid === customerId
+    );
+
+    if (!foundCustomer)
+      return res.status(400).json({ msg: "Customer not found" });
+
+    //nottification
+    const taskId = task._id;
+    const taskerName = tasker.displayName;
+    const text = `من فضلك قم بتقييم العامل ${taskerName}`;
     const pushNotification = {
       text,
       type: "rate",
       taskerId,
+      taskId,
       notifId: uuidv4(),
     };
-    customer.notification.push(pushNotification);
-    customer.save();
+    //======================================================================= push rate notification to customer
+    await customer.notification.push(pushNotification);
+    await customer.save();
+    //======================================================================= add anothed done task to tasker
+    await tasker.doneTasks.push({ taskId });
+    await tasker.save();
+    //======================================================================= remove connections
 
-    tasker.doneTasks.push({ taskId });
-    tasker.save();
+    await tasker.connections.pull(foundCustomer);
+    await tasker.save();
+
+    await customer.connections.pull(foundTasker);
+    await customer.save();
+    //======================================================================
     //updating the ticket status
     await task.updateOne({ status: "done" });
-    const updated = await Task.findOne({
-      _id: req.params.id,
-    });
-    res.json(updated.status);
+
+    res.json("done");
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }

@@ -23,25 +23,25 @@ const {
   update_notification,
   delete_notification,
   lastLogin,
+  delete_specific_task_by_customer,
 } = require("../controllers/customerController");
 //================================================================
 const {
   get_all_tasks_for_tasker,
   delete_specific_task,
   accept_connection,
+  accept_connection_new,
   reject_connection,
   send_message,
   makeAd,
   mark_as_done,
 } = require("../controllers/taskerController");
 //================================================================
-
-//@@ All the handlers are in the controllers folder
 router.post("/register", user_register);
 router.post("/login", user_login);
 router.delete("/delete", auth, delete_user_account);
 //================================================================================= customer handlers
-router.post("/addTickets/:taskerId", auth, connection, add_task);
+router.post("/addTask/:taskerId", auth, connection, add_task);
 router.post("/addConnection/:taskerId", auth, add_connection);
 router.get(
   "/getTaskerTodos/:taskerId",
@@ -53,19 +53,19 @@ router.get("/getallfromCategory/:catId", get_all_from_category);
 router.get("/getallCategories", get_all_categories);
 router.get("/getSingleAd/:adsId", get_single_ad);
 router.post("/addComment/:adsId", auth, add_commnet);
-router.post("/rate/:taskerId/:notifId", auth, connection, rate);
+// router.post("/rate/:taskerId/:notifId", auth, connection, rate);
+router.post("/rate/:taskId/:notifId", auth, rate);
 router.get("/taskerInfo/:taskerId", get_tasker_info);
 router.get("/taskerRating/:taskerId", get_tasker_rating);
 router.put("/updateNotification/:notificationId", auth, update_notification);
 router.post("/deleteNotification/:notificationId", auth, delete_notification);
+router.delete("/deleteMyTask/:id", auth, delete_specific_task_by_customer);
 //================================================================================= tasker handlers
 router.post("/acceptConnection", auth, accept_connection);
 router.post("/rejectConnection", auth, reject_connection);
 router.get("/myTasks", auth, get_all_tasks_for_tasker);
-router.delete("/myTasks/:id", auth, delete_specific_task);
 router.put("/doneTask/:id", auth, mark_as_done);
 router.post("/newAd/:catId", auth, makeAd);
-
 //================================================================================= global handlers
 router.post("/sendMessage/:id", auth, connection, send_message);
 router.put("/lastLogin", auth, lastLogin);
