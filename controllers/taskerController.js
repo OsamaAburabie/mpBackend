@@ -185,6 +185,11 @@ exports.makeAd = async function (req, res) {
       return res.status(400).json({ msg: "you're not a tasker" });
     //================================
     const { title, desc, price, location } = req.body;
+    if (typeof price !== "number")
+      return res.status(400).json({ msg: "السعر يجب ان يكون رقما " });
+    if (!title || !desc || !price || !location)
+      return res.status(400).json({ msg: "الرجاء ادخل جميع الحقول " });
+
     //================================
 
     const newAd = await Ads({
@@ -198,8 +203,8 @@ exports.makeAd = async function (req, res) {
       },
       catId: req.params.catId,
     });
-    const ad = await newAd.save();
-    res.json(ad);
+    await newAd.save();
+    res.json("تم ارسال اعلانك بنجاح ");
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }

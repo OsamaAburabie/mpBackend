@@ -65,7 +65,7 @@ router.post("/acceptConnection", auth, accept_connection);
 router.post("/rejectConnection", auth, reject_connection);
 router.get("/myTasks", auth, get_all_tasks_for_tasker);
 router.put("/doneTask/:id", auth, mark_as_done);
-router.post("/newAd/:catId", auth, makeAd);
+router.post("/newpost/:catId", auth, makeAd);
 //================================================================================= global handlers
 router.post("/sendMessage/:id", auth, connection, send_message);
 router.put("/lastLogin", auth, lastLogin);
