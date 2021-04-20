@@ -23,6 +23,7 @@ const connectionSchema = new mongoose.Schema({
   taskTitle: { type: String },
   taskDesc: { type: String },
   taskId: { type: String },
+  taskLocation: { type: String },
 });
 
 const userSchema = new mongoose.Schema(

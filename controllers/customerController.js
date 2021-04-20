@@ -110,6 +110,7 @@ exports.add_connection = async function (req, res) {
       uid: customerId,
       taskTitle: savedTask.title,
       taskDesc: savedTask.desc,
+      taskLocation: savedTask.location,
       taskId,
     });
     await tasker.save();
