@@ -17,14 +17,17 @@ const dontTasksSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-const connectionSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  uid: { type: String, required: true },
-  taskTitle: { type: String },
-  taskDesc: { type: String },
-  taskId: { type: String },
-  taskLocation: { type: String },
-});
+const connectionSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    uid: { type: String, required: true },
+    taskTitle: { type: String },
+    taskDesc: { type: String },
+    taskId: { type: String },
+    taskLocation: { type: String },
+  },
+  { timestamps: true }
+);
 
 const userSchema = new mongoose.Schema(
   {

@@ -9,12 +9,16 @@ exports.add__category = async function (req, res) {
     if (user.role != "admin")
       return res.status(400).json({ msg: "Unauthorized" });
     //================================
-    const { name, picture } = req.body;
+    const { name, picture, min, high } = req.body;
     //================================
+    if (!name || !picture || !min || !high)
+      return res.status(400).json({ msg: "all feilds are required" });
 
     const newCat = await Category({
       name,
       picture,
+      min,
+      high,
     });
     const category = await newCat.save();
 
