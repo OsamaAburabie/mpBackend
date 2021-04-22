@@ -152,17 +152,45 @@ exports.send_message = async function (req, res) {
     });
     if (!task) return res.status(400).json({ msg: "No task found" });
 
-    if (task.CustomerId !== req.user)
-      return res.status(400).json({ msg: "this task does not belong to you!" });
-
-    //get username
     const user = await User.findById(req.user);
-    //================================================================
-    const message = { username: user.displayName, text };
-    task.messages.push(message);
-    task.save();
-    //================================================================
-    res.json(task);
+
+    if (user.role === "customer") {
+      if (task.CustomerId !== req.user)
+        return res
+          .status(400)
+          .json({ msg: "this task does not belong to you!" });
+
+      //get username
+      const user = await User.findById(req.user);
+      //================================================================
+      const message = { username: user.displayName, text };
+      await task.messages.push(message);
+      await task.save();
+      //================================================================
+
+      const [lastItem] = await task.messages.slice(-1);
+
+      res.json(lastItem);
+    } else if (user.role === "tasker") {
+      if (task.taskerId !== req.user)
+        return res
+          .status(400)
+          .json({ msg: "this task does not belong to you!" });
+
+      //get username
+      const user = await User.findById(req.user);
+      //================================================================
+      const message = { username: user.displayName, text };
+      await task.messages.push(message);
+      await task.save();
+      //================================================================
+
+      const [lastItem] = await task.messages.slice(-1);
+
+      res.json(lastItem);
+    } else {
+      return res.status(400).json({ msg: "unauthorized" });
+    }
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }
@@ -322,6 +350,87 @@ exports.mark_as_done = async function (req, res) {
     await task.updateOne({ status: "done" });
 
     res.json("done");
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+
+exports.change_task = async function (req, res) {
+  try {
+    //the working value is 1 or 2 1 for false and 2 for true
+    const { working, menutes } = req.body;
+    //if the user is an admin they can edit ticket status
+    const task = await Task.findOne({
+      _id: req.params.id,
+    });
+    //check if the task exists
+    if (!task) return res.status(400).json({ msg: "No task found" });
+    //================================================================ id's
+    const customerId = task.CustomerId;
+    //================================================================
+    const tasker = await User.findById(req.user);
+    if (!tasker) return res.status(400).json({ msg: "tasker not found" });
+
+    //================================================================
+    const taskerId = tasker._id.valueOf().toString();
+    //================================================================
+
+    const customer = await User.findById(customerId);
+    if (!customer) return res.status(400).json({ msg: "customer not found" });
+
+    //find the tasker pending customer
+    const foundTasker = customer.connections.find((el) => el.uid === taskerId);
+    if (!foundTasker)
+      return res.status(400).json({ msg: "Tasker can not be found" });
+
+    //find the customer tasker
+    const foundCustomer = tasker.connections.find(
+      (el) => el.uid === customerId
+    );
+
+    if (!foundCustomer)
+      return res.status(400).json({ msg: "Customer not found" });
+
+    //nottification
+    const taskId = task._id;
+    const taskerName = tasker.displayName;
+    const text = `${taskerName} قام بتغيير حالة مهمتك  `;
+    const pushNotification = {
+      text,
+      type: "connection",
+      taskerId,
+      taskId,
+      notifId: uuidv4(),
+    };
+    //========================================================= this function will add n number of menutes to the current date
+    Date.prototype.addMinutes = function (h) {
+      this.setMinutes(this.getMinutes() + h);
+      return this;
+    };
+
+    //updating
+    if (menutes && !working) {
+      await task.updateOne({ estimatedTime: new Date().addMinutes(menutes) });
+    } else if (!menutes) {
+      await task.updateOne({ working: working });
+    } else {
+      await task.updateOne({
+        working: working,
+        estimatedTime: new Date().addMinutes(menutes),
+      });
+    }
+
+    //======================================================================= push rate notification to customer
+    await customer.notification.push(pushNotification);
+    await customer.save();
+
+    const updated = await Task.findOne({
+      _id: req.params.id,
+    });
+    res.json({
+      working: updated.working,
+      estimatedTime: updated.estimatedTime,
+    });
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }

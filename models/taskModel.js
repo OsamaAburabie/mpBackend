@@ -18,6 +18,8 @@ const taskSchema = new mongoose.Schema(
     location: { type: String, required: true },
     date: { type: Date },
     rated: { type: Boolean, default: false },
+    working: { type: Number, default: 1 },
+    estimatedTime: { type: Date },
     messages: [messageSchema],
   },
   { timestamps: true }

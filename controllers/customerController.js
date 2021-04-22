@@ -138,7 +138,10 @@ exports.get_tasker_tasks_by_customer = async function (req, res) {
     const tasker = await User.findById(req.params.taskerId);
     if (!tasker) return res.status(400).json({ msg: "tasker not found" });
 
-    const tasks = await Task.find({ taskerId: req.params.taskerId });
+    const tasks = await Task.find({
+      taskerId: req.params.taskerId,
+      status: "pending",
+    });
     res.json(tasks);
   } catch (err) {
     res.status(404).json({ msg: "Not found 404" });

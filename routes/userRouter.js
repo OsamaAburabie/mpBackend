@@ -35,6 +35,7 @@ const {
   send_message,
   makeAd,
   mark_as_done,
+  change_task,
 } = require("../controllers/taskerController");
 //================================================================
 router.post("/register", user_register);
@@ -65,9 +66,10 @@ router.post("/acceptConnection", auth, accept_connection);
 router.post("/rejectConnection", auth, reject_connection);
 router.get("/myTasks", auth, get_all_tasks_for_tasker);
 router.put("/doneTask/:id", auth, mark_as_done);
+router.put("/editTask/:id", auth, change_task);
 router.post("/newpost/:catId", auth, makeAd);
 //================================================================================= global handlers
-router.post("/sendMessage/:id", auth, connection, send_message);
+router.post("/sendMessage/:id/:taskerId", auth, send_message);
 router.put("/lastLogin", auth, lastLogin);
 
 module.exports = router;
