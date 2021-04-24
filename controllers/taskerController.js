@@ -169,7 +169,7 @@ exports.send_message = async function (req, res) {
       //================================================================
 
       const [lastItem] = await task.messages.slice(-1);
-
+      await task.updateOne({ notification: 1 });
       res.json(lastItem);
     } else if (user.role === "tasker") {
       if (task.taskerId !== req.user)
@@ -198,7 +198,23 @@ exports.send_message = async function (req, res) {
 
 exports.get_all_tasks_for_tasker = async function (req, res) {
   try {
-    const tasks = await Task.find({ taskerId: req.user });
+    const user = await User.findById(req.user);
+    if (user.role !== "tasker")
+      return res.status(400).json({ msg: "unauthorized" });
+
+    const tasks = await Task.find({ taskerId: req.user, status: "pending" });
+    res.json(tasks);
+  } catch (err) {
+    res.status(404).json({ msg: "Not found 404" });
+  }
+};
+exports.get_single_tasks_for_tasker = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+    if (user.role !== "tasker")
+      return res.status(400).json({ msg: "unauthorized" });
+
+    const tasks = await Task.find({ _id: req.params.id });
     res.json(tasks);
   } catch (err) {
     res.status(404).json({ msg: "Not found 404" });

@@ -21,6 +21,7 @@ const taskSchema = new mongoose.Schema(
     working: { type: Number, default: 1 },
     estimatedTime: { type: Date },
     messages: [messageSchema],
+    notification: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
