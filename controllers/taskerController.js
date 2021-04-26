@@ -52,7 +52,7 @@ exports.accept_connection = async function (req, res) {
 
     const taskerName = tasker.displayName;
 
-    const text = `لقد اضافك ${taskerName} الى شبكته .. تواصل معه الاَن`;
+    const text = `لقد اضافك ${taskerName} الى مهامه .. تواصل معه الاَن`;
 
     const pushNotification = {
       text,
