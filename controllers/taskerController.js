@@ -451,3 +451,19 @@ exports.change_task = async function (req, res) {
     res.status(404).json({ msg: err.message });
   }
 };
+
+exports.update_message = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+    if (user.role !== "tasker")
+      return res.status(400).json({ msg: " unauthorized " });
+    const task = await Task.findById(req.params.taskId);
+    // task.notification = 0;
+    // task.save();
+    await task.updateOne({ notification: 0 });
+
+    res.json("done");
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};

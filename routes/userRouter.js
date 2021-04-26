@@ -37,6 +37,7 @@ const {
   mark_as_done,
   change_task,
   get_single_tasks_for_tasker,
+  update_message,
 } = require("../controllers/taskerController");
 //================================================================
 router.post("/register", user_register);
@@ -70,6 +71,7 @@ router.get("/singleTask/:id", auth, get_single_tasks_for_tasker);
 router.put("/doneTask/:id", auth, mark_as_done);
 router.put("/editTask/:id", auth, change_task);
 router.post("/newpost/:catId", auth, makeAd);
+router.put("/updateMessage/:taskId", auth, update_message);
 //================================================================================= global handlers
 router.post("/sendMessage/:id/:taskerId", auth, send_message);
 router.put("/lastLogin", auth, lastLogin);
