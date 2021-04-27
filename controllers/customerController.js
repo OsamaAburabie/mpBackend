@@ -2,6 +2,7 @@ const Task = require("../models/taskModel");
 const User = require("../models/userModel");
 const Category = require("../models/categoryModel");
 const Ads = require("../models/taskerAdsModel");
+const { PageviewTwoTone } = require("@material-ui/icons");
 
 // exports.add_connection_old = async function (req, res) {
 //   try {
@@ -182,9 +183,18 @@ exports.get_all_categories = async function (req, res) {
   }
 };
 exports.get_all_from_category = async function (req, res) {
+  const PAGE_SIZE = 7;
+  const total = await Ads.countDocuments({ catId: req.params.catId });
+  const page = parseInt(req.query.page || 0);
   try {
-    const ads = await Ads.find({ catId: req.params.catId });
-    res.json(ads);
+    const ads = await Ads.find({ catId: req.params.catId })
+      .limit(PAGE_SIZE)
+      .skip(PAGE_SIZE * page);
+
+    res.json({
+      totalPages: Math.ceil(total / PAGE_SIZE),
+      ads,
+    });
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }
