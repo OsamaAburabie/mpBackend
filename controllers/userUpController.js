@@ -4,6 +4,8 @@ const fs = require("fs");
 const Task = require("../models/taskModel");
 const User = require("../models/userModel");
 const Ads = require("../models/taskerAdsModel");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 exports.makeAd = async function (req, res) {
   try {
@@ -79,5 +81,129 @@ exports.makeAd = async function (req, res) {
     }
   } catch (err) {
     res.status(404).json({ msg: err.message });
+  }
+};
+
+exports.user_register = async function (req, res) {
+  try {
+    //destructuring the req body
+    const { email, password, passwordCheck, displayName, isTasker } = req.body;
+
+    const img = req.file;
+
+    let role;
+    if (parseInt(isTasker) === 1) {
+      role = "customer";
+    } else {
+      role = "tasker";
+    }
+    //Validation
+    if (!email || !password || !passwordCheck || !displayName)
+      return res.status(400).json({ msg: "الرجاء ادخل الحقول المطلوبة" });
+
+    if (password.length < 5)
+      return res
+        .status(400)
+        .json({ msg: "كلمة المرور يجب ان تكون 5 خانات على الاقل" });
+
+    if (password != passwordCheck)
+      return res.status(400).json({ msg: "كلمه المرور غير مطابقه" });
+
+    if (displayName.length < 3)
+      return res.status(400).json({ msg: "اسمك يجب ان يكون 3 احرف على الاقل" });
+    //email validation
+    const regex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    const emailVal = regex.test(email);
+    if (emailVal === false)
+      return res.status(400).json({ msg: "البريد غير صحيح" });
+
+    //check for existing user with the same email
+    const existingUser = await User.findOne({ email: email });
+    if (existingUser)
+      return res
+        .status(400)
+        .json({ msg: "خطأ: هناك حساب اخر بنفس البريد المدخل" });
+    //hashing the password
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    if (!img) {
+      const newUser = await User({
+        email,
+        password: passwordHash,
+        displayName,
+        role,
+      });
+      const user = await newUser.save();
+      //login the user
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "10hr",
+      });
+      res.json({
+        token,
+        user: {
+          id: user._id,
+          displayName: user.displayName,
+          email: user.email,
+          role: user.role,
+          img: user.img,
+        },
+      });
+    } else if (img) {
+      //================================
+      aws.config.setPromisesDependency();
+      aws.config.update({
+        accessKeyId: process.env.ACCESSKEYID,
+        secretAccessKey: process.env.SECRETACCESSKEY,
+        region: process.env.REGION,
+      });
+
+      const s3 = new aws.S3();
+      var params = {
+        ACL: "public-read",
+        Bucket: process.env.BUCKET_NAME,
+        Body: fs.createReadStream(req.file.path),
+        Key: `userAvatar/${req.file.originalname}`,
+      };
+
+      s3.upload(params, async (err, data) => {
+        if (err) {
+          console.log("Error occured while trying to upload to S3 bucket", err);
+        }
+
+        if (data) {
+          fs.unlinkSync(req.file.path); // Empty temp folder
+          const locationUrl = data.Location;
+
+          const newUser = await User({
+            email,
+            password: passwordHash,
+            displayName,
+            img: locationUrl,
+            role,
+          });
+          const user = await newUser.save();
+
+          //login the user
+          const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: "10hr",
+          });
+          res.json({
+            token,
+            user: {
+              id: user._id,
+              displayName: user.displayName,
+              email: user.email,
+              role: user.role,
+              img: user.img,
+            },
+          });
+        }
+      });
+    }
+
+    //saving the user in the database
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

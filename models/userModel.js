@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     img: {
       type: String,
       default:
-        "https://scontent.famm6-1.fna.fbcdn.net/v/t31.18172-8/23632407_1481745538541088_4407289845242811931_o.jpg?_nc_cat=106&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=c9YJstHkbe0AX8z0Fwj&_nc_ht=scontent.famm6-1.fna&oh=04774438877236f1bf10d2fa470a791c&oe=60A3DB77",
+        "http://magganan.afdl-3kar.com/ext/dark1/memberavatarstatus/image/avatar.png",
     },
     role: { type: String, required: true, default: "customer" },
     active: { type: Boolean, required: true, default: true },

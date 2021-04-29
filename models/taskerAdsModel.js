@@ -12,7 +12,11 @@ const TaskerAdsSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     desc: { type: String, required: true },
-    img: { type: String },
+    img: {
+      type: String,
+      default:
+        "https://orange-master-piece-1.s3.eu-central-1.amazonaws.com/userAvatar/maham.png",
+    },
     price: { type: Number, required: true },
     taskerInfo: { type: Object },
     location: { type: String, required: true },
