@@ -103,11 +103,12 @@ exports.edit__category = async function (req, res) {
     if (!img) {
       await category.updateOne({ name, min, high });
 
-      const updated = await Category.findOne({
-        _id: req.params.catId,
-      });
+      // const updated = await Category.findOne({
+      //   _id: req.params.catId,
+      // });
 
-      res.json(updated);
+      // res.json(updated);
+      res.json("edited successfully");
     } else if (img) {
       //================================
       aws.config.setPromisesDependency();
@@ -136,11 +137,12 @@ exports.edit__category = async function (req, res) {
 
           await category.updateOne({ name, min, high, picture: locationUrl });
 
-          const updated = await Category.findOne({
-            _id: req.params.catId,
-          });
+          // const updated = await Category.findOne({
+          //   _id: req.params.catId,
+          // });
 
-          res.json(updated);
+          // res.json(updated);
+          res.json("edited successfully");
         }
       });
     }
@@ -156,6 +158,14 @@ exports.single_category = async function (req, res) {
     });
 
     res.json(category);
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+exports.delete__category = async function (req, res) {
+  try {
+    await Category.findByIdAndDelete(req.params.catId);
+    res.json("deleted");
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }

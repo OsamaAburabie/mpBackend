@@ -4,6 +4,7 @@ const {
   add__category,
   edit__category,
   single_category,
+  delete__category,
 } = require("../controllers/adminController");
 const multer = require("multer");
 
@@ -27,6 +28,8 @@ router
   );
 
 router.get("/singleCategory/:catId", single_category);
+
+router.delete("/deleteCategory/:catId", delete__category);
 // router.get("/allTickets", auth, get_all_tickets_by_admin);
 
 // router.put("/allTickets/:id", auth, change_ticket_status_by_admin);
