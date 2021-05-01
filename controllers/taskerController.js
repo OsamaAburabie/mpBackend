@@ -245,6 +245,7 @@ exports.makeAd = async function (req, res) {
         name: user.displayName,
         uid: user._id,
       },
+      taskerId: user._id,
       catId: req.params.catId,
     });
     await newAd.save();
@@ -463,6 +464,16 @@ exports.update_message = async function (req, res) {
     await task.updateOne({ notification: 0 });
 
     res.json("done");
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+
+exports.get_ads_for_tasker = async function (req, res) {
+  try {
+    const ads = await Ads.find({ taskerId: req.user });
+
+    res.json(ads);
   } catch (err) {
     res.status(404).json({ msg: err.message });
   }

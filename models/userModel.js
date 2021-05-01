@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     img: {
       type: String,
       default:
-        "http://magganan.afdl-3kar.com/ext/dark1/memberavatarstatus/image/avatar.png",
+        "https://cdn3.iconfinder.com/data/icons/avatars-round-flat/33/avat-01-512.png",
     },
     role: { type: String, required: true, default: "customer" },
     active: { type: Boolean, required: true, default: true },

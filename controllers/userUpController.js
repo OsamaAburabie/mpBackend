@@ -32,6 +32,7 @@ exports.makeAd = async function (req, res) {
           name: user.displayName,
           uid: user._id,
         },
+        taskerId: user._id,
         catId: req.params.catId,
       });
       await newAd.save();

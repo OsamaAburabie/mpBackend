@@ -38,6 +38,7 @@ const {
   change_task,
   get_single_tasks_for_tasker,
   update_message,
+  get_ads_for_tasker,
 } = require("../controllers/taskerController");
 //================================================================
 router.post("/register", user_register);
@@ -67,6 +68,7 @@ router.delete("/deleteMyTask/:id", auth, delete_specific_task_by_customer);
 router.post("/acceptConnection", auth, accept_connection);
 router.post("/rejectConnection", auth, reject_connection);
 router.get("/myTasks", auth, get_all_tasks_for_tasker);
+router.get("/myPosts", auth, get_ads_for_tasker);
 router.get("/singleTask/:id", auth, get_single_tasks_for_tasker);
 router.put("/doneTask/:id", auth, mark_as_done);
 router.put("/editTask/:id", auth, change_task);

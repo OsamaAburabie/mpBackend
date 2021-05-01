@@ -19,6 +19,7 @@ const TaskerAdsSchema = new mongoose.Schema(
     },
     price: { type: Number, required: true },
     taskerInfo: { type: Object },
+    taskerId: { type: String, required: true },
     location: { type: String, required: true },
     tags: [String],
     comments: [commentSchema],
