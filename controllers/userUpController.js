@@ -85,6 +85,92 @@ exports.makeAd = async function (req, res) {
   }
 };
 
+exports.editAd = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+    if (!user) return res.status(400).json({ msg: "المستخدم غير موجود" });
+    //checking if this user is an admin
+    if (user.role != "tasker")
+      return res.status(400).json({ msg: "انت لست عامل" });
+    const ad = await Ads.findById(req.params.postId);
+    if (!ad) return res.status(400).json({ msg: "الاعلان غير موجود" });
+
+    //================================
+    const { title, desc, price, location } = req.body;
+
+    const img = req.file;
+
+    if (!title || !desc || !price || !location)
+      return res.status(400).json({ msg: "الرجاء ادخل جميع الحقول " });
+
+    if (!img) {
+      await ad.updateOne({ title, desc, price, location });
+
+      res.json("تم التعديل بنجاح");
+    } else if (img) {
+      //================================
+      aws.config.setPromisesDependency();
+      aws.config.update({
+        accessKeyId: process.env.ACCESSKEYID,
+        secretAccessKey: process.env.SECRETACCESSKEY,
+        region: process.env.REGION,
+      });
+
+      const s3 = new aws.S3();
+      var params = {
+        ACL: "public-read",
+        Bucket: process.env.BUCKET_NAME,
+        Body: fs.createReadStream(req.file.path),
+        Key: `userAvatar/${req.file.originalname}`,
+      };
+
+      s3.upload(params, async (err, data) => {
+        if (err) {
+          console.log("Error occured while trying to upload to S3 bucket", err);
+        }
+
+        if (data) {
+          fs.unlinkSync(req.file.path); // Empty temp folder
+          const locationUrl = data.Location;
+
+          await ad.updateOne({
+            title,
+            desc,
+            price,
+            location,
+            img: locationUrl,
+          });
+
+          res.json("تم التعديل بنجاح");
+        }
+      });
+    }
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+exports.deleteAd = async function (req, res) {
+  try {
+    const user = await User.findById(req.user);
+    if (!user) return res.status(400).json({ msg: "المستخدم غير موجود" });
+    const ad = await Ads.findById(req.params.postId);
+    if (!ad) return res.status(400).json({ msg: "الاعلان غير موجود" });
+
+    //================================================================
+    const taskerId = user._id.valueOf().toString();
+    //================================================================
+    if (ad.taskerId !== taskerId)
+      return res.status(400).json({ msg: "هذا الاعلان ليس لك" });
+
+    await Ads.findByIdAndDelete(req.params.postId);
+    res.json("done");
+  } catch (err) {
+    res.status(404).json({ msg: err.message });
+  }
+};
+
+//=========================================================================
+
 exports.user_register = async function (req, res) {
   try {
     //destructuring the req body
