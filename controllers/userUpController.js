@@ -69,6 +69,7 @@ exports.makeAd = async function (req, res) {
             price,
             img: locationUrl,
             location,
+            taskerId: user._id,
             taskerInfo: {
               name: user.displayName,
               uid: user._id,
